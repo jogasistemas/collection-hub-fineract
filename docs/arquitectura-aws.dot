@@ -1,0 +1,30 @@
+digraph AWS {
+ graph [rankdir=TB,bgcolor="white",pad=0.3,fontname="Arial",label="Collection Hub | Propuesta AWS",labelloc=t,fontsize=22];
+ node [shape=box,style="rounded,filled",fillcolor="#EDF4FA",fontname="Arial",margin="0.2,0.12"];
+ edge [fontname="Arial",fontsize=10,color="#475569"];
+ client [label="Consumidor autorizado",fillcolor="#F1F5F9"];
+ subgraph cluster_aws { label="AWS Region"; color="#64748B"; style=rounded;
+ api [label="API Gateway HTTP API\nHTTPS / JWT",fillcolor="#FDE8CE"];
+ subgraph cluster_vpc {label="VPC · dos zonas de disponibilidad"; color="#40865B"; style=rounded;
+ subgraph cluster_app {label="Subredes privadas de aplicación";color="#94A3B8";style=rounded;
+ alb [label="ALB interno"];
+ hub [label="ECS Fargate\nCollection Hub · Java 21",fillcolor="#FDE8CE"];
+ fin [label="ECS Fargate\nApache Fineract 1.12.1",fillcolor="#FDE8CE"];
+ alb -> hub [label="8081"];
+ hub -> fin [label="REST HTTPS 8443\nService Connect"];
+ }
+ subgraph cluster_data {label="Subredes aisladas de datos";color="#94A3B8";style=rounded;
+ hdb [label="RDS PostgreSQL\nHub · Flyway",shape=cylinder];
+ fdb [label="RDS PostgreSQL\nFineract · Liquibase",shape=cylinder];
+ {rank=same;hdb;fdb;}
+ }
+ hub -> hdb [label="5432"];
+ fin -> fdb [label="5432"];
+ }
+ support [label="ECR · Secrets Manager · CloudWatch\nIAM · KMS",fillcolor="#F1F5F9"];
+ api -> alb [label="VPC Link / TLS"];
+ hub -> support [style=dashed,label="servicios de soporte",constraint=false];
+ fin -> support [style=dashed,constraint=false];
+ }
+ client -> api [label="HTTPS 443"];
+}
