@@ -1,0 +1,79 @@
+name: prestamype-entrega
+
+services:
+  hub-db:
+    image: postgres:16.1
+    environment:
+      POSTGRES_DB: ${HUB_DB_NAME}
+      POSTGRES_USER: ${HUB_DB_USERNAME}
+      POSTGRES_PASSWORD: ${HUB_DB_PASSWORD}
+    volumes:
+      - hub_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  fineract-db:
+    image: postgres:16.1
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ${FINERACT_POSTGRES_PASSWORD}
+      FINERACT_DB_USER: ${FINERACT_DB_USER}
+      FINERACT_DB_PASS: ${FINERACT_DB_PASSWORD}
+      FINERACT_TENANTS_DB_NAME: fineract_tenants
+      FINERACT_TENANT_DEFAULT_DB_NAME: fineract_default
+    volumes:
+      - fineract_data:/var/lib/postgresql/data
+      - ./docker/fineract/initdb/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  fineract:
+    image: apache/fineract:1.12.1
+    environment:
+      SPRING_PROFILES_ACTIVE: test,diagnostics
+      FINERACT_SERVER_SSL_ENABLED: "true"
+      FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME: org.postgresql.Driver
+      FINERACT_HIKARI_JDBC_URL: jdbc:postgresql://fineract-db:5432/fineract_tenants
+      FINERACT_HIKARI_USERNAME: ${FINERACT_DB_USER}
+      FINERACT_HIKARI_PASSWORD: ${FINERACT_DB_PASSWORD}
+      FINERACT_DEFAULT_TENANTDB_IDENTIFIER: default
+      FINERACT_DEFAULT_TENANTDB_NAME: fineract_default
+      FINERACT_DEFAULT_TENANTDB_HOSTNAME: fineract-db
+      FINERACT_DEFAULT_TENANTDB_PORT: "5432"
+      FINERACT_DEFAULT_TENANTDB_UID: ${FINERACT_DB_USER}
+      FINERACT_DEFAULT_TENANTDB_PWD: ${FINERACT_DB_PASSWORD}
+      FINERACT_DEFAULT_TENANTDB_TIMEZONE: Asia/Kolkata
+      FINERACT_DEFAULT_MASTER_PASSWORD: ${FINERACT_MASTER_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xmx1G -XX:+UseContainerSupport"
+    depends_on:
+      fineract-db:
+        condition: service_healthy
+    # Sin publicar 8443 todavía: evita conflictos con tu Fineract actual.
+
+  hub:
+    image: prestamype-collection-hub:1.0
+    environment:
+      HUB_DB_URL: jdbc:postgresql://hub-db:5432/${HUB_DB_NAME}
+      HUB_DB_USERNAME: ${HUB_DB_USERNAME}
+      HUB_DB_PASSWORD: ${HUB_DB_PASSWORD}
+      FINERACT_BASE_URL: https://fineract:8443/fineract-provider/api/v1
+      FINERACT_TENANT_ID: default
+      FINERACT_USERNAME: ${FINERACT_USERNAME}
+      FINERACT_PASSWORD: ${FINERACT_PASSWORD}
+      FINERACT_INSECURE_SSL: "true"
+    depends_on:
+      hub-db:
+        condition: service_healthy
+      fineract:
+        condition: service_started
+    # Sin publicar 8081 todavía: evita conflictos con tu Hub actual.
+
+volumes:
+  hub_data:
+  fineract_data:

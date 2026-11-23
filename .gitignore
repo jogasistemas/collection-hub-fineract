@@ -1,0 +1,26 @@
+# Credenciales y variables locales
+.env
+.env.*
+!.env.example
+
+# Maven
+target/
+*.log
+logs/
+
+# IntelliJ y VS Code
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Archivos sensibles
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Datos locales de demostracion
+.demo/

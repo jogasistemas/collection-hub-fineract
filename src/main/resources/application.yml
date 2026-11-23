@@ -1,0 +1,21 @@
+server:
+  port: 8081
+fineract:
+  base-url: ${FINERACT_BASE_URL:https://localhost:8444/fineract-provider/api/v1}
+  tenant-id: ${FINERACT_TENANT_ID:default}
+  payment-type-id: ${FINERACT_PAYMENT_TYPE_ID:1}
+  username: ${FINERACT_USERNAME:mifos}
+  password: ${FINERACT_PASSWORD:password}
+  # Solo para desarrollo local con certificado autofirmado.
+  insecure-ssl: ${FINERACT_INSECURE_SSL:true}
+spring:
+  datasource:
+    url: ${HUB_DB_URL:jdbc:postgresql://localhost:5433/collection_hub}
+    username: ${HUB_DB_USERNAME:hub_user}
+    password: ${HUB_DB_PASSWORD:hub_password}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
